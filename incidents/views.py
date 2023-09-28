@@ -1,12 +1,18 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .models import User, Incident
+from .models import  Incident
+from django.contrib.auth.models import User
 from .serializers import UserSerializer, IncidentSerializer,GetIncidentSerializer
 import requests
 import json
 from django.shortcuts import get_object_or_404
 from django.http import Http404
 from rest_framework.exceptions import ValidationError
+from django.contrib.auth.models import User as AuthUser
+from django.contrib.auth.hashers import make_password
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import BasicAuthentication
+
 
 class GetInfofromPin(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
@@ -28,7 +34,7 @@ class UserCreateView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    # Override the post method to handle pin code and auto-populate City and Country
+
     def post(self, request, *args, **kwargs):
         # Extract the pin code from the request data
         pincode = request.data.get('pincode')
@@ -42,18 +48,33 @@ class UserCreateView(generics.CreateAPIView):
             request.data['city'] = data.get('city', '')
             request.data['state'] = data.get('state', '')
             request.data['country'] = data.get('country', '')
+            
+            # Check if a user with the same username (first_name+last_name) already exists
+            username = request.data['first_name'] +" "+ request.data['last_name']
+            try:
+                existing_user = AuthUser.objects.get(username=username)
+                return Response({'detail': 'Username already registered'}, status=status.HTTP_400_BAD_REQUEST)
+            except AuthUser.DoesNotExist:
+                pass  # The user does not exist, continue with user creation
 
-            # Continue with user creation
-            response = super(UserCreateView, self).post(request, *args, **kwargs)
-
-            if response.status_code == 201:
-                # User created successfully
-                return Response({'detail': 'User created successfully'}, status=status.HTTP_201_CREATED)
-            else:
-                # Handle other response status codes or errors if needed
-                return response
+            # Create the user in the custom incidents_user table
+            user_serializer = self.get_serializer(data=request.data)
+            user_serializer.is_valid(raise_exception=True)
+            # Hash the password using Django's make_password function
+            hashed_password = make_password(request.data['password'])
+            user_serializer.validated_data['password'] = hashed_password
+            user_serializer.save()
+            # Create the user in the auth_user table
+            auth_user = AuthUser(
+                username=username,  # Set the username as first_name+last_name
+                email=request.data['email'],
+                password=hashed_password,  # Make sure to hash the password
+            )
+            auth_user.save()
+            return Response({'detail': 'User created successfully'}, status=status.HTTP_201_CREATED)
         else:
             return Response({'detail': 'Failed to fetch pincode information'}, status=response.status_code)
+
 
 class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
@@ -133,7 +154,7 @@ class IncidentCreateView(generics.CreateAPIView):
             return Response({'detail': 'Reporter not found'}, status=status.HTTP_404_NOT_FOUND)
 
           # Add reporter_name to the request data as 'reporter'
-        request.data['reporter'] = reporter_name.first_name + " " + reporter_name.last_name
+        request.data['reporter'] = str(reporter_name)
 
          # Use the modified request data to create the incident
         serializer = self.get_serializer(data=request.data)
@@ -147,21 +168,11 @@ class IncidentCreateView(generics.CreateAPIView):
 
 class IncidentListView(generics.ListAPIView):
     serializer_class = GetIncidentSerializer
+    authentication_classes = [BasicAuthentication]  # Use Basic Authentication
+    permission_classes = [IsAuthenticated]  # Require authentication
 
     def get_queryset(self):
-        queryset = Incident.objects.all()
-        userid = self.request.query_params.get('user_id')
-        incidentid = self.request.query_params.get('incident_id')
-
-        try:
-            # Create an initial queryset that includes all incidents
-            if userid:
-                queryset = queryset.filter(reporter_id=userid)
-            if incidentid:
-                queryset = queryset.filter(incident_id=incidentid)
-        except Exception as e:
-            return Response({'detail': 'An error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        queryset = Incident.objects.filter(reporter=self.request.user)  # Filter by the authenticated user
         return queryset
 
     def list(self, request, *args, **kwargs):
@@ -170,21 +181,48 @@ class IncidentListView(generics.ListAPIView):
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
+            
+            return Response({'detail': 'An error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class IncidentSearchView(generics.ListAPIView):
+    serializer_class = GetIncidentSerializer
+
+    def get_queryset(self):
+        incident_id = self.request.query_params.get('incident_id')
+        if incident_id:
+            queryset = Incident.objects.filter(incident_id=incident_id)
+        else:
+            queryset = Incident.objects.none()
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        incident_id = self.request.query_params.get('incident_id')
+        if not incident_id:
+            return Response({'detail': 'The "incident_id" parameter is required for searching.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            queryset = self.get_queryset()
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            
             return Response({'detail': 'An error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class IncidentUpdateView(generics.UpdateAPIView):
     serializer_class = IncidentSerializer
+    permission_classes = [IsAuthenticated]  # Require authentication
 
     def get_object(self):
         incident_id = self.request.query_params.get('incident_id')
         if incident_id is None:
-            # If user_id is not provided, return a validation error response
-            raise ValidationError({'incident_id': ['incident ID must be provided for update.']})
+            # If incident_id is not provided, return a validation error response
+            raise ValidationError({'incident_id': ['Incident ID must be provided for update.']})
 
         try:
-            
-            return Incident.objects.get(incident_id=incident_id)
+            # Check if the incident belongs to the authenticated user
+            return Incident.objects.get(incident_id=incident_id, reporter=self.request.user)
         except Incident.DoesNotExist:
             return None
 
@@ -192,7 +230,7 @@ class IncidentUpdateView(generics.UpdateAPIView):
         instance = self.get_object()
 
         if instance is None:
-            return Response({'detail': 'Incident not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Incident not found or you do not have permission to edit it.'}, status=status.HTTP_404_NOT_FOUND)
         
         # Check if the incident is closed before allowing the update
         if instance.status == 'Closed':

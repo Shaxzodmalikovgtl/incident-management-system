@@ -7,16 +7,16 @@ import random
 
 
 class User(models.Model):
-    first_name = models.CharField(max_length=30)  # Add first name field
-    last_name = models.CharField(max_length=30)   # Add last name field
+    first_name = models.CharField(max_length=30)  
+    last_name = models.CharField(max_length=30)   
     email = models.EmailField()
     address = models.CharField(max_length=255)
     country = models.CharField(max_length=100)
-    state = models.CharField(max_length=100)      # Add state field
+    state = models.CharField(max_length=100)      
     city = models.CharField(max_length=100)
     pincode = models.CharField(max_length=10)
-    mobile_number = models.CharField(max_length=20)  # Add mobile number field
-    password = models.CharField(max_length=128)     # For storing hashed passwords
+    mobile_number = models.CharField(max_length=20)  
+    password = models.CharField(max_length=128)     
 
 
     def __str__(self):
