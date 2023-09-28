@@ -17,8 +17,7 @@ The Incident Management System is developed using Python and Django Rest Framewo
 ## Installation
 
 1. Clone the repository to your local machine:
-   git clone https://github.com/yourusername/incident-management-system.git
-
+  git clone 
 
 2. Change into the project directory:
    cd incident-management-system
@@ -60,7 +59,7 @@ The Incident Management System is developed using Python and Django Rest Framewo
 - `GET /api/pincode/{pincode}/`: Retrieve information (City and Country) based on the entered Pin Code.
 
 ### Swagger Documentation
--  /swagger/
+-  `http://localhost:8000/swagger/`
 
 
 ## Contributing
