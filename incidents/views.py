@@ -5,7 +5,8 @@ from .serializers import UserSerializer, IncidentSerializer
 import requests
 import json
 from django.shortcuts import get_object_or_404
-
+from django.http import Http404
+from rest_framework.exceptions import ValidationError
 
 class GetInfofromPin(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
@@ -55,15 +56,42 @@ class UserCreateView(generics.CreateAPIView):
             return Response({'detail': 'Failed to fetch pincode information'}, status=response.status_code)
 
 class UserListView(generics.ListAPIView):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    def get_queryset(self):
+        user_id = self.request.query_params.get('user_id')
+
+        if user_id:
+            try:
+                user = User.objects.get(id=user_id)
+                return [user]  # Return a list containing the single user
+            except User.DoesNotExist:
+                raise Http404("User does not exist")
+
+        # If user_id is not provided, return all users
+        return User.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class UserUpdateView(generics.UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
     def update(self, request, *args, **kwargs):
-        instance = self.get_object()
+        # Extract user_id from the request data
+        user_id = request.query_params.get('user_id')
+
+        if user_id is None:
+            # If user_id is not provided, return a validation error response
+            raise ValidationError({'user_id': ['User ID must be provided for update.']})
+
+        # Get the user object based on user_id
+        instance = get_object_or_404(User, pk=user_id)
+
         serializer = self.get_serializer(instance, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -74,8 +102,21 @@ class UserDeleteView(generics.DestroyAPIView):
     queryset = User.objects.all()
 
     def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
+        user_id = request.query_params.get('user_id')
+
+        if user_id is None:
+            # If user_id is not provided, return a validation error response
+            return Response({'detail': 'User ID must be provided for deletion.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            instance = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            # If the user with the provided user_id does not exist, return a not found response
+            return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Perform the deletion
         instance.delete()
+
         return Response({'detail': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
 
 class IncidentCreateView(generics.CreateAPIView):
@@ -118,8 +159,8 @@ class IncidentListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = Incident.objects.all()
-        userid = self.request.query_params.get('userid')
-        incidentid = self.request.query_params.get('incidentid')
+        userid = self.request.query_params.get('user_id')
+        incidentid = self.request.query_params.get('incident_id')
 
         try:
             # Create an initial queryset that includes all incidents
@@ -175,7 +216,6 @@ class IncidentDeleteView(generics.DestroyAPIView):
     def get_object(self):
         incident_id = self.request.query_params.get('incident_id')
         try:
-            # Assuming your model has a field named 'incident_id'
             return Incident.objects.get(incident_id=incident_id)
         except Incident.DoesNotExist:
             return None

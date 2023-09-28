@@ -39,16 +39,15 @@ The Incident Management System is developed using Python and Django Rest Framewo
 
 ## API Endpoints
 
-### User Authentication and Registration
-- `POST /api/register/`: Register a new user.
-- `POST /api/token/`: Obtain a JWT token for user authentication.
-- `POST /api/token/refresh/`: Refresh a JWT token.
+### User Registration
+- `POST /api/users/register/`: Register a new user.
+
 
 ### User Management
 - `GET /api/users/`: List all users.
-- `GET /api/users/{user_id}/`: Retrieve a specific user by ID.
-- `PUT /api/users/{user_id}/`: Update a specific user by ID.
-- `DELETE /api/users/{user_id}/`: Delete a specific user by ID.
+- `GET /api/users/?user_id/`: Retrieve a specific user by ID.
+- `PUT /api/users/update/?user_id`: Update a specific user by ID.
+- `DELETE /api/users/delete/?user_id`: Delete a specific user by ID.
 
 ### Incident Management
 - `POST /api/incidents/`: Create a new incident.
