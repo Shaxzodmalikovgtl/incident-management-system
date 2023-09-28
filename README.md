@@ -61,7 +61,7 @@ The Incident Management System is developed using Python and Django Rest Framewo
 - `GET /api/pincode/{pincode}/`: Retrieve information (City and Country) based on the entered Pin Code.
 
 ### Swagger Documentation
--  http://127.0.0.1:8000/swagger/
+-  /swagger/
 
 
 ## Contributing
