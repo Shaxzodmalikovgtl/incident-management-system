@@ -36,30 +36,30 @@ The Incident Management System is developed using Python and Django Rest Framewo
 
 7. Access the application at `http://localhost:8000/`.
 
-###API Endpoints
-##User Registration
+### API Endpoints
+## User Registration
 POST /api/users/register/: Register a new user.
 
-##User Management
-GET /api/users/: List all users.
-GET /api/users/?user_id=<user_id>: Retrieve a specific user by ID.
-PUT /api/users/update/?user_id=<user_id>: Update a specific user by ID.
-DELETE /api/users/delete/?user_id=<user_id>: Delete a specific user by ID.
+## User Management
+- GET /api/users/: List all users.
+- GET /api/users/?user_id=<user_id>: Retrieve a specific user by ID.
+- PUT /api/users/update/?user_id=<user_id>: Update a specific user by ID.
+- DELETE /api/users/delete/?user_id=<user_id>: Delete a specific user by ID.
 
 
-###Incident Management
-POST /api/incidents/: Create a new incident.
-GET /api/incidents/: List all incidents created by the logged-in user.
-GET /api/incidents/?incidentid=<incident_id>: Retrieve a specific incident by ID.
-PUT /api/incidents/?incidentid=<incident_id>: Update a specific incident by ID (if not closed).
-DELETE /api/incidents/?incidentid=<incident_id>: Delete a specific incident by ID (if not closed).
+### Incident Management
+- POST /api/incidents/: Create a new incident.
+- GET /api/incidents/: List all incidents created by the logged-in user.
+- GET /api/incidents/?incidentid=<incident_id>: Retrieve a specific incident by ID.
+- PUT /api/incidents/?incidentid=<incident_id>: Update a specific incident by ID (if not closed).
+- DELETE /api/incidents/?incidentid=<incident_id>: Delete a specific incident by ID (if not closed).
 
 
-###Get Information from Pin Code
-GET /api/pincode/<pincode>/: Retrieve information (City and Country) based on the entered Pin Code.
+### Get Information from Pin Code
+- GET /api/pincode/<pincode>/: Retrieve information (City and Country) based on the entered PIN code.
 
 
-###Swagger Documentation
+### Swagger Documentation
 Access the interactive API documentation at: http://localhost:8000/swagger/
 ## Contributing
 
