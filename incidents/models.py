@@ -37,7 +37,7 @@ class Incident(models.Model):
     )
 
     incident_id = models.CharField(max_length=20, unique=True)
-    reporter_id = models.CharField(max_length=20, unique=True)
+    reporter_id = models.CharField(max_length=20)
     reporter = models.CharField(max_length=40) 
     details = models.TextField()
     reported_datetime = models.DateTimeField(default=timezone.now)

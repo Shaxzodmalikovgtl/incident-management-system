@@ -13,5 +13,11 @@ class IncidentSerializer(serializers.ModelSerializer):
         model = Incident
         exclude = ['incident_id']
 
-    # Make sure to include the 'reporter' field here
     read_only_fields = ['incident_id']
+
+
+class GetIncidentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Incident
+        fields = '__all__'
+   

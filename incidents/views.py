@@ -1,7 +1,7 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from .models import User, Incident
-from .serializers import UserSerializer, IncidentSerializer
+from .serializers import UserSerializer, IncidentSerializer,GetIncidentSerializer
 import requests
 import json
 from django.shortcuts import get_object_or_404
@@ -126,11 +126,8 @@ class IncidentCreateView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         # Check if the reporter exists based on their user ID (assuming it's provided in the request)
         reporter_id = request.data.get('reporter_id')
-        print("reporter_id:::::::::::::::", reporter_id)
         try:
             reporter_name = User.objects.get(pk=reporter_id)
-            print("reporter:::::::::::", reporter_name)
-            print("user exists")
         except User.DoesNotExist:
             # Log a message if the reporter does not exist
             return Response({'detail': 'Reporter not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -143,19 +140,13 @@ class IncidentCreateView(generics.CreateAPIView):
         if serializer.is_valid():
             # Create the incident record (without saving it to the database)
             incident = serializer.save()
-
-            # Since reporter is now assigned, you don't need to update reporter_name
-            print("you are here")
             return Response({'detail': 'Incident created successfully'}, status=status.HTTP_201_CREATED)
         else:
-            print("serializer not valid")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        
 
 
 class IncidentListView(generics.ListAPIView):
-    serializer_class = IncidentSerializer
+    serializer_class = GetIncidentSerializer
 
     def get_queryset(self):
         queryset = Incident.objects.all()
@@ -187,8 +178,12 @@ class IncidentUpdateView(generics.UpdateAPIView):
 
     def get_object(self):
         incident_id = self.request.query_params.get('incident_id')
+        if incident_id is None:
+            # If user_id is not provided, return a validation error response
+            raise ValidationError({'incident_id': ['incident ID must be provided for update.']})
+
         try:
-            # Assuming your model has a field named 'incident_id'
+            
             return Incident.objects.get(incident_id=incident_id)
         except Incident.DoesNotExist:
             return None
