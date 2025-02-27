@@ -75,14 +75,15 @@ WSGI_APPLICATION = 'incident_management.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'IMS',       
-        'USER': 'root', 
-        'PASSWORD': 'Lon23965', 
-        'HOST': 'localhost',   
-        'PORT': '',            
+        'ENGINE': 'mysql.connector.django',  # Change to mysql.connector.django
+        'NAME': 'IMS',
+        'USER': 'root',
+        'PASSWORD': '286944',
+        'HOST': 'localhost',
+        'PORT': '',  # Default MySQL port, can leave it blank
     }
 }
+
 
 
 
